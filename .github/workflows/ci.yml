@@ -19,12 +19,26 @@ jobs:
       with:
         python-version: "3.10"
 
+    # ── Cache pip (makes CI faster on repeat runs) ────────────────────────────
+    - name: Cache pip dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('backend/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+
     # ── Install Backend Dependencies ──────────────────────────────────────────
     - name: Install Backend Dependencies
       run: |
         cd backend
         pip install -r requirements.txt
-        pip install pytest httpx
+        pip install pytest httpx flake8
+
+    # ── Lint Code (code quality check) ────────────────────────────────────────
+    - name: Lint with flake8
+      run: |
+        flake8 backend --max-line-length=120 --exclude=backend/__pycache__,backend/test_api.py
 
     # ── Validate Imports ──────────────────────────────────────────────────────
     - name: Validate Python Imports
@@ -36,11 +50,11 @@ jobs:
       run: |
         docker build -t mlops-runner ./docker
 
-    # ── Test Docker Execution ─────────────────────────────────────────────────
-    - name: Test Docker Execution
+    # ── Test Docker ML Execution (validates sklearn works in container) ────────
+    - name: Test Docker ML Execution
       run: |
-        echo "print('CI Docker test passed')" > /tmp/test_ci.py
-        docker run --rm -v /tmp:/app mlops-runner python /app/test_ci.py
+        printf "from sklearn.datasets import load_iris\nX, y = load_iris(return_X_y=True)\nprint('ML OK - samples:', len(X))" > /tmp/test_ml.py
+        docker run --rm -v /tmp:/app mlops-runner python /app/test_ml.py
 
     # ── Run API Tests ─────────────────────────────────────────────────────────
     - name: Run API Tests

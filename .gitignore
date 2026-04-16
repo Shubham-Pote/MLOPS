@@ -1,0 +1,31 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Models — don't commit trained model binaries
+models/*.pkl
+
+# MLflow experiment data
+experiments/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temp files from docker runner
+mlops_*/
+
+# Pytest
+.pytest_cache/

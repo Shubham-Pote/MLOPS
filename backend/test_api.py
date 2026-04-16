@@ -55,6 +55,10 @@ def test_models_list():
     assert "models" in response.json()
     assert "count" in response.json()
 
+def test_metrics():
+    response = client.get("/metrics")
+    assert response.status_code == 200
+    assert "predict_requests_total" in response.text
 
 def test_predict_missing_model():
     response = client.post("/predict", json={

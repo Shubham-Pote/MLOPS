@@ -1,4 +1,5 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Response
+from prometheus_client import Counter, Histogram, generate_latest
 from pydantic import BaseModel
 from typing import Any, Optional
 from executor.docker_runner import run_code_in_docker
@@ -7,8 +8,13 @@ from services.mlflow_service import log_run, get_runs
 
 router = APIRouter()
 
+# ── Metrics ───────────────────────────────────────────────────────────────────
+REQUEST_COUNT = Counter("predict_requests_total", "Total prediction requests")
+REQUEST_TIME = Histogram("predict_latency_seconds", "Prediction latency")
 
 # ── Request / Response Models ─────────────────────────────────────────────────
+
+
 class CodeRequest(BaseModel):
     code: str
 
@@ -108,13 +114,16 @@ def predict_endpoint(request: PredictRequest):
     Example:
         { "model": "iris_model.pkl", "features": [5.1, 3.5, 1.4, 0.2] }
     """
+    REQUEST_COUNT.inc()
+
     if not model_exists(request.model):
         raise HTTPException(
             status_code=404,
             detail=f"Model '{request.model}' not found. Train and save it first via /run-code."
         )
     try:
-        result = predict(request.model, request.features)
+        with REQUEST_TIME.time():
+            result = predict(request.model, request.features)
         return {"status": "success", **result}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -135,3 +144,9 @@ def get_experiments(limit: int = 20):
 @router.get("/health")
 def health():
     return {"status": "ok"}
+
+
+# ── /metrics ──────────────────────────────────────────────────────────────────
+@router.get("/metrics")
+def metrics():
+    return Response(generate_latest(), media_type="text/plain")

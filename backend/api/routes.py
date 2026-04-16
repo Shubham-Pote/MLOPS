@@ -14,19 +14,19 @@ class CodeRequest(BaseModel):
 
 
 class RunResponse(BaseModel):
-    run_id:      str
-    status:      str
-    exit_code:   int
-    output:      str
-    data:        Optional[Any]
-    error:       str
+    run_id: str
+    status: str
+    exit_code: int
+    output: str
+    data: Optional[Any]
+    error: str
     model_saved: bool
-    new_models:  list[str]
+    new_models: list[str]
 
 
 class PredictRequest(BaseModel):
-    model:    str           # e.g. "iris_model.pkl"
-    features: list[float]   # e.g. [5.1, 3.5, 1.4, 0.2]
+    model: str
+    features: list[float]
 
 
 # ── /run-code ─────────────────────────────────────────────────────────────────
@@ -43,14 +43,12 @@ def run_code(request: CodeRequest):
 
     result = run_code_in_docker(request.code)
 
-    # ── auto-log to MLflow if we got structured data ──────────────────────────
+    # auto-log to MLflow if we got structured data
     if result["exit_code"] == 0 and isinstance(result["data"], dict):
         data = result["data"]
-
         metrics = {}
-        params  = {}
+        params = {}
 
-        # extract known metric keys
         for key in ("accuracy", "precision", "recall", "f1", "loss", "score"):
             if key in data:
                 try:
@@ -58,7 +56,6 @@ def run_code(request: CodeRequest):
                 except (TypeError, ValueError):
                     pass
 
-        # extract known param keys
         for key in ("algorithm", "dataset", "model_path", "train_samples", "test_samples"):
             if key in data:
                 params[key] = str(data[key])
@@ -66,23 +63,23 @@ def run_code(request: CodeRequest):
         if metrics or params:
             try:
                 log_run(
-                    run_id  = result["run_id"],
-                    params  = params,
-                    metrics = metrics,
-                    tags    = {"model_saved": str(result["model_saved"])}
+                    run_id=result["run_id"],
+                    params=params,
+                    metrics=metrics,
+                    tags={"model_saved": str(result["model_saved"])}
                 )
             except Exception:
-                pass   # never break /run-code because of MLflow
+                pass
 
     return RunResponse(
-        run_id      = result["run_id"],
-        status      = "success" if result["exit_code"] == 0 else "error",
-        exit_code   = result["exit_code"],
-        output      = result["output"],
-        data        = result["data"],
-        error       = result["error"],
-        model_saved = result["model_saved"],
-        new_models  = result["new_models"]
+        run_id=result["run_id"],
+        status="success" if result["exit_code"] == 0 else "error",
+        exit_code=result["exit_code"],
+        output=result["output"],
+        data=result["data"],
+        error=result["error"],
+        model_saved=result["model_saved"],
+        new_models=result["new_models"]
     )
 
 

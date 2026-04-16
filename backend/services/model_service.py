@@ -10,6 +10,7 @@ Handles everything related to saved .pkl models:
 import os
 import glob
 import time
+import json
 import joblib
 
 MODELS_DIR = os.path.abspath(
@@ -51,7 +52,15 @@ def delete_model(filename: str) -> bool:
     return False
 
 
-def predict(filename: str, features: list) -> dict:
+def get_model_metadata(filename: str) -> dict:
+    meta_path = os.path.join(MODELS_DIR, f"{filename}_metadata.json")
+    if os.path.isfile(meta_path):
+        with open(meta_path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return {}
+
+
+def predict(filename: str, features: dict | list) -> dict:
     """
     Load a saved .pkl model and run inference.
 
@@ -69,7 +78,16 @@ def predict(filename: str, features: list) -> dict:
     model = joblib.load(path)
 
     import numpy as np
-    X = np.array(features).reshape(1, -1)
+
+    if isinstance(features, dict):
+        metadata = get_model_metadata(filename)
+        if "features" in metadata:
+            ordered_features = [features.get(f, 0.0) for f in metadata["features"]]
+        else:
+            ordered_features = list(features.values())
+        X = np.array(ordered_features).reshape(1, -1)
+    else:
+        X = np.array(features).reshape(1, -1)
     prediction = model.predict(X)
 
     # probability scores if the model supports it

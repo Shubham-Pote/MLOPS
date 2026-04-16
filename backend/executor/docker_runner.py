@@ -83,6 +83,12 @@ def run_code_in_docker(code: str, run_id: str = None) -> dict:
                 parsed_data["model_path"] = f"models/{new_models[0]}"
             parsed_data["all_models"] = [f"models/{m}" for m in new_models]
 
+            if "metadata" in parsed_data:
+                for new_model in new_models:
+                    meta_path = os.path.join(MODELS_DIR, f"{new_model}_metadata.json")
+                    with open(meta_path, "w", encoding="utf-8") as mf:
+                        json.dump(parsed_data["metadata"], mf)
+
         return {
             "run_id": run_id,
             "output": raw_output,

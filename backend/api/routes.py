@@ -3,7 +3,7 @@ from prometheus_client import Counter, Histogram, generate_latest
 from pydantic import BaseModel
 from typing import Any, Optional
 from executor.docker_runner import run_code_in_docker
-from services.model_service import list_models, model_exists, delete_model, predict
+from services.model_service import list_models, model_exists, delete_model, predict, get_model_metadata
 from services.mlflow_service import log_run, get_runs
 
 router = APIRouter()
@@ -32,7 +32,7 @@ class RunResponse(BaseModel):
 
 class PredictRequest(BaseModel):
     model: str
-    features: list[float]
+    features: dict[str, float] | list[float]
 
 
 # ── /run-code ─────────────────────────────────────────────────────────────────
@@ -103,6 +103,18 @@ def delete_model_file(filename: str):
         raise HTTPException(status_code=404, detail=f"Model '{filename}' not found.")
     delete_model(filename)
     return {"message": f"Model '{filename}' deleted."}
+
+
+@router.get("/model-info/{model_name}")
+def get_model_info(model_name: str):
+    """Fetch feature metadata for a specific model."""
+    if not model_exists(model_name) and not model_exists(f"{model_name}.pkl"):
+        raise HTTPException(status_code=404, detail=f"Model '{model_name}' not found.")
+
+    # Try fetching by exact name or without .pkl extension
+    name_no_ext = model_name.replace(".pkl", "")
+    metadata = get_model_metadata(name_no_ext)
+    return metadata
 
 
 # ── /predict ──────────────────────────────────────────────────────────────────

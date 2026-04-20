@@ -1,0 +1,1 @@
+{"features": ["Image_Variance", "Image_Skewness", "Image_Curtosis", "Image_Entropy"], "target": "Forensic Image Analysis", "class_names": {"0": "Authentic Currency", "1": "Counterfeit / Forgery detected!"}}

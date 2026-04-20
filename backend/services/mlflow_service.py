@@ -39,7 +39,17 @@ def log_run(run_id: str, params: dict, metrics: dict, tags: dict = None) -> str:
     """
     mlflow.set_experiment(EXPERIMENT_NAME)
 
-    with mlflow.start_run(run_name=run_id) as run:
+    algorithm = params.get("algorithm", "") if params else ""
+    dataset = params.get("dataset", "") if params else ""
+    
+    if algorithm and dataset:
+        friendly_name = f"{algorithm} - {dataset}"
+    elif algorithm:
+        friendly_name = f"{algorithm} Run"
+    else:
+        friendly_name = f"Experiment Run {run_id[:6]}"
+
+    with mlflow.start_run(run_name=friendly_name) as run:
         if params:
             mlflow.log_params(params)
         if metrics:
@@ -48,6 +58,8 @@ def log_run(run_id: str, params: dict, metrics: dict, tags: dict = None) -> str:
             mlflow.set_tags(tags)
         return run.info.run_id
 
+
+import pandas as pd
 
 def get_runs(max_results: int = 20) -> list[dict]:
     """Return recent experiment runs as a list of dicts."""
@@ -71,12 +83,12 @@ def get_runs(max_results: int = 20) -> list[dict]:
             "metrics":    {
                 k.replace("metrics.", ""): v
                 for k, v in row.items()
-                if k.startswith("metrics.")
+                if k.startswith("metrics.") and pd.notna(v)
             },
             "params":     {
                 k.replace("params.", ""): v
                 for k, v in row.items()
-                if k.startswith("params.")
+                if k.startswith("params.") and pd.notna(v)
             },
         })
     return results

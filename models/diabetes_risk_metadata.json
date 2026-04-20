@@ -1,0 +1,1 @@
+{"features": ["Pregnancies", "Glucose", "BloodPressure", "SkinThickness", "Insulin", "BMI", "DiabetesPedigree", "Age"], "target": "Health Risk Diagnosis", "class_names": {"0": "Clear - Low Risk ", "1": "Positive - High Risk "}}

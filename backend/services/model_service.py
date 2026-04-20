@@ -46,17 +46,42 @@ def get_model_path(filename: str) -> str:
 
 def delete_model(filename: str) -> bool:
     path = os.path.join(MODELS_DIR, filename)
+    deleted_any = False
+    
     if os.path.isfile(path):
         os.remove(path)
-        return True
-    return False
+        deleted_any = True
+        
+    # Clean up the metadata file (new standard)
+    name_no_ext = filename.replace(".pkl", "")
+    meta_path = os.path.join(MODELS_DIR, f"{name_no_ext}_metadata.json")
+    if os.path.isfile(meta_path):
+        os.remove(meta_path)
+        deleted_any = True
+        
+    # Clean up the legacy metadata file if it exists
+    meta_path_legacy = os.path.join(MODELS_DIR, f"{filename}_metadata.json")
+    if os.path.isfile(meta_path_legacy):
+        os.remove(meta_path_legacy)
+        deleted_any = True
+
+    return deleted_any
 
 
 def get_model_metadata(filename: str) -> dict:
-    meta_path = os.path.join(MODELS_DIR, f"{filename}_metadata.json")
+    # Primary: check for the new standard (without .pkl in name)
+    name_no_ext = filename.replace(".pkl", "")
+    meta_path = os.path.join(MODELS_DIR, f"{name_no_ext}_metadata.json")
     if os.path.isfile(meta_path):
         with open(meta_path, "r", encoding="utf-8") as f:
             return json.load(f)
+            
+    # Fallback: check for the legacy standard (with .pkl in name)
+    meta_path_legacy = os.path.join(MODELS_DIR, f"{filename}_metadata.json")
+    if os.path.isfile(meta_path_legacy):
+        with open(meta_path_legacy, "r", encoding="utf-8") as f:
+            return json.load(f)
+            
     return {}
 
 
@@ -95,8 +120,12 @@ def predict(filename: str, features: dict | list) -> dict:
     if hasattr(model, "predict_proba"):
         proba = model.predict_proba(X)[0].tolist()
 
+    pred_val = prediction[0]
+    if hasattr(pred_val, "item"):
+        pred_val = pred_val.item()
+
     return {
         "model":       filename,
-        "prediction":  int(prediction[0]),
+        "prediction":  pred_val,
         "probability": proba
     }

@@ -55,7 +55,7 @@ def run_code(request: CodeRequest):
         metrics = {}
         params = {}
 
-        for key in ("accuracy", "precision", "recall", "f1", "loss", "score"):
+        for key in ("accuracy", "precision", "recall", "f1", "loss", "score", "mse", "r2", "mae"):
             if key in data:
                 try:
                     metrics[key] = float(data[key])
@@ -111,9 +111,7 @@ def get_model_info(model_name: str):
     if not model_exists(model_name) and not model_exists(f"{model_name}.pkl"):
         raise HTTPException(status_code=404, detail=f"Model '{model_name}' not found.")
 
-    # Try fetching by exact name or without .pkl extension
-    name_no_ext = model_name.replace(".pkl", "")
-    metadata = get_model_metadata(name_no_ext)
+    metadata = get_model_metadata(model_name)
     return metadata
 
 

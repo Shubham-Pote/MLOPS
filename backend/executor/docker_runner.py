@@ -51,7 +51,6 @@ def run_code_in_docker(code: str, run_id: str = None) -> dict:
             "--name", container_name,
             "--memory", MEMORY_LIMIT,
             "--cpus", CPU_LIMIT,
-            "--network", "none",
             "--volume", f"{tmp_dir}:/app",
             "--volume", f"{MODELS_DIR}:/app/models",
             "--workdir", "/app",
@@ -85,7 +84,8 @@ def run_code_in_docker(code: str, run_id: str = None) -> dict:
 
             if "metadata" in parsed_data:
                 for new_model in new_models:
-                    meta_path = os.path.join(MODELS_DIR, f"{new_model}_metadata.json")
+                    name_no_ext = new_model.replace(".pkl", "")
+                    meta_path = os.path.join(MODELS_DIR, f"{name_no_ext}_metadata.json")
                     with open(meta_path, "w", encoding="utf-8") as mf:
                         json.dump(parsed_data["metadata"], mf)
 
